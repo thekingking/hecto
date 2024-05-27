@@ -22,9 +22,10 @@ impl Editor {
 
     fn repl(&mut self) -> Result<(), std::io::Error> {
         loop {
-            self.refresh_screen()?;
             if self.should_quit {
                 break;
+            } else {
+                Terminal::refresh_screen()?;
             }
             let event = read()?;
             self.evaluate_event(&event);
@@ -42,30 +43,9 @@ impl Editor {
                 Char('c') if *modifiers == KeyModifiers::CONTROL => {
                     self.should_quit = true;
                 },
+                Char(c) => print!("{}", c),
                 _ => (),
             }
         }
-    }
-
-    fn refresh_screen(&self) -> Result<(), std::io::Error> {
-        if self.should_quit {
-            Terminal::clear_screen()?;
-            print!("GoodBye.\r\n");
-        } else {
-            Self::draw_rows()?;
-            Terminal::move_cursor_to(0, 0)?;
-        }
-        Ok(())
-    }
-
-    fn draw_rows() -> Result<(), std::io::Error> {
-        let height = Terminal::size()?.1;
-        for current_row in 0..height {
-            print!("~");
-            if current_row + 1 < height {
-                print!("\r\n");
-            }
-        }
-        Ok(())
     }
 }
