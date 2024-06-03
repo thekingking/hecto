@@ -3,7 +3,10 @@ use crossterm::event::{
     Event::{self, Key},
     KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
 };
-use std::io::Error;
+use std::{
+    env,
+    io::Error
+};
 
 mod terminal;
 use terminal::{Terminal, Size, Position};
@@ -27,9 +30,17 @@ pub struct Editor {
 impl Editor {
     pub fn run(&mut self) {
         Terminal::initialize().unwrap();
+        self.handle_args();
         let result = self.repl();
         Terminal::terminate().unwrap();
         result.unwrap();
+    }
+
+    fn handle_args(&mut self) {
+        let args: Vec<String> = env::args().collect();
+        if let Some(first_arg) = args.get(1) {
+            self.view.load(&first_arg);
+        }
     }
 
     fn repl(&mut self) -> Result<(), Error> {
