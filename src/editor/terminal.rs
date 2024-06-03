@@ -5,7 +5,7 @@ use crossterm::style::Print;
 use std::io::{stdout, Write, Error};
 use core::fmt::Display;
 
-#[derive(Copy, Clone)]
+#[derive(Default, Copy, Clone)]
 pub struct Size {
     pub height: usize,
     pub width: usize,
