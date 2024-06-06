@@ -1,7 +1,7 @@
 use std::io::Error;
 use std::fs::read_to_string;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Buffer {
     pub lines: Vec<String>,
 }

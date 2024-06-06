@@ -1,11 +1,11 @@
 use crossterm::cursor::{MoveTo, Hide, Show};
 use crossterm::{queue, Command};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, size, Clear, ClearType};
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode, size, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::style::Print;
 use std::io::{stdout, Write, Error};
 use core::fmt::Display;
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, Debug)]
 pub struct Size {
     pub height: usize,
     pub width: usize,
@@ -23,6 +23,7 @@ impl Terminal {
     /// 开启
     pub fn initialize() -> Result<(),   Error> {
         enable_raw_mode()?;
+        Self::enter_alternate_screen()?;
         Self::clear_screen()?;
         Self::execute()?;
         Ok(())
@@ -30,8 +31,20 @@ impl Terminal {
 
     /// 关闭
     pub fn terminate() -> Result<(), Error> {
+        Self::leave_alternate_screen()?;
+        Self::show_caret()?;
         Self::execute()?;
         disable_raw_mode()?;
+        Ok(())
+    }
+
+    pub fn enter_alternate_screen() -> Result<(), Error> {
+        Self::queue_command(EnterAlternateScreen)?;
+        Ok(())
+    }
+
+    pub fn leave_alternate_screen() -> Result<(), Error> {
+        Self::queue_command(LeaveAlternateScreen)?;
         Ok(())
     }
 
@@ -67,6 +80,13 @@ impl Terminal {
         Ok(())
     }
 
+    pub fn print_row(row: usize, line_text: &str) -> Result<(), Error> {
+        Self::move_caret_to(Position { row, col: 0 })?;
+        Self::clear_line()?;
+        Self::print(line_text)?;
+        Ok(())
+    }
+
     /// 返回当前终端窗口大小
     pub fn size() -> Result<Size, Error> {
         let (width_u16, height_u16) = size()?;
@@ -82,7 +102,7 @@ impl Terminal {
         Ok(())
     }
 
-    fn queue_command<T: Command>(command: T) -> Result<(), Error> {
+    pub fn queue_command<T: Command>(command: T) -> Result<(), Error> {
         queue!(stdout(), command)?;
         Ok(())
     }
