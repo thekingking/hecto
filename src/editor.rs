@@ -1,26 +1,19 @@
-use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::event::{read, Event, KeyEvent, KeyEventKind};
 use std::{
     env, 
     io::Error,
     panic::{set_hook, take_hook},
 };
-use core::cmp::min;
 
 mod terminal;
 mod view;
-use terminal::{Terminal, Size, Position};
+mod editorcommand;
+use terminal::Terminal;
 use view::View;
+use editorcommand::EditorCommand;
 
-#[derive(Clone, Copy, Default, Debug)]
-struct Location {
-    x: usize,
-    y: usize,
-}
-
-#[derive(Debug)]
 pub struct Editor {
     should_quit: bool,
-    location: Location,
     view: View,
 }
 
@@ -39,7 +32,6 @@ impl Editor {
         }
         Ok(Self {
             should_quit: false,
-            location: Location::default(),
             view,
         })
     }
@@ -62,89 +54,36 @@ impl Editor {
         }
     }
 
-    fn move_point(&mut self, key_code: KeyCode) {
-        let Location { mut x, mut y } = self.location;
-        let Size { height, width } = Terminal::size().unwrap_or_default();
-        match key_code {
-            KeyCode::Up => {
-                y = y.saturating_sub(1);
-            },
-            KeyCode::Down => {
-                y = min(y.saturating_add(1), height.saturating_sub(1));
-            },
-            KeyCode::Left => {
-                x = x.saturating_sub(1);
-            },
-            KeyCode::Right => {
-                x = min(x.saturating_add(1), width.saturating_sub(1));
-            },
-            KeyCode::PageUp => {
-                y = 0;
-            },
-            KeyCode::PageDown => {
-                y = height.saturating_sub(1);
-            },
-            KeyCode::Home => {
-                x = 0;
-            },
-            KeyCode::End => {
-                x = width.saturating_sub(1);
-            },
-            _ => (),
-        }
-        self.location = Location { x, y };
-    }
-
     #[allow(clippy::needless_pass_by_value)]
     fn evaluate_event(&mut self, event: Event) {
-        match event {
-            Event::Key(KeyEvent{
-                code,
-                modifiers,
-                kind: KeyEventKind::Press,
-                ..
-            }) => {
-                match (code, modifiers) {
-                    (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
+        let should_process = match &event {
+            Event::Key(KeyEvent { kind, .. }) => kind == &KeyEventKind::Press,
+            Event::Resize(_, _) => true,
+            _ => false,
+        };
+        if should_process {
+            match EditorCommand::try_from(event) {
+                Ok(command) => {
+                    if matches!(command, EditorCommand::Quit) {
                         self.should_quit = true;
-                    },
-                    (
-                        KeyCode::Up
-                        | KeyCode::Down
-                        | KeyCode::Left
-                        | KeyCode::Right
-                        | KeyCode::PageUp
-                        | KeyCode::PageDown
-                        | KeyCode::Home
-                        | KeyCode::End,
-                        _
-                    ) => {
-                        self.move_point(code);
-                    },
-                    _ => (),
+                    } else {
+                        self.view.handle_command(command);
+                    }
                 }
-            },
-            // 窗口大小发生变化
-            Event::Resize(width_u16, height_u16) => {
-                #[allow(clippy::as_conversions)]
-                let height = height_u16 as usize;
-                let width = width_u16 as usize;
-                self.view.resize(Size {
-                    height,
-                    width,
-                })
-            },
-            _ => (),
+                Err(err) => {
+                    #[cfg(debug_assertions)]
+                    {
+                        panic!("Could not handle command: {err:?}");
+                    }
+                }
+            }
         }
     }
 
     fn refresh_screen(&mut self) {
         let _ = Terminal::hide_caret();
         self.view.render();
-        let _ = Terminal::move_caret_to(Position {
-            col: self.location.x,
-            row: self.location.y,
-        });
+        let _ = Terminal::move_caret_to(self.view.get_position());
         let _ = Terminal::show_caret();
         let _ = Terminal::execute();
     }
@@ -157,12 +96,4 @@ impl Drop for Editor {
             let _ = Terminal::print("Goodbye. \r\n");
         }
     }
-}
-
-#[test]
-fn test_new() {
-    let mut editor = Editor::new().unwrap();
-    editor.view.load("README.md");
-    println!("{editor:?}");
-    editor.run();
 }
