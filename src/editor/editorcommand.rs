@@ -16,14 +16,15 @@ pub enum Direction {
 
 /// 自定义Editor命令
 pub enum EditorCommand {
-    Move(Direction),
-    Resize(Size),
-    Quit,
+    Move(Direction), // 移动
+    Resize(Size),   // 窗口大小发生变化
+    Quit, // 退出
 }
 
 impl TryFrom<Event> for EditorCommand {
     type Error = String;
 
+    /// 将crossterm中时间转换成自定义的EditorCommand
     fn try_from(event: Event) -> Result<Self, Self::Error> {
         match event {
             Event::Key(KeyEvent {

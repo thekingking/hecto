@@ -8,6 +8,7 @@ pub struct Buffer {
 }
 
 impl Buffer {
+    /// 将文件内容加载到buffer
     pub fn load(file_name: &str) -> Result<Self, Error>{
         let contents = read_to_string(file_name)?;
         let mut lines = Vec::new();

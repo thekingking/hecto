@@ -7,6 +7,7 @@ pub struct Location {
 }
 
 impl From<Location> for Position {
+    /// 将Location转换为Position
     fn from(location: Location) -> Self {
         Self {
             row: location.y,
@@ -16,6 +17,7 @@ impl From<Location> for Position {
 } 
 
 impl Location {
+    /// 两个坐标的相对位置，求光标在view中的相对位置
     pub const fn subtract(&self, other: &Self) -> Self {
         Self {
             x: self.x.saturating_sub(other.x),
