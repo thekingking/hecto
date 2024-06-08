@@ -1,11 +1,13 @@
 use super::{
     editorcommand::{Direction, EditorCommand}, terminal::{Position, Size, Terminal}
 };
+use std::cmp;
 
 mod buffer;
 mod location;
 mod line;
 use buffer::Buffer;
+use line::Line;
 use location::Location;
 
 const NAME: &str = env!("CARGO_PKG_NAME");
@@ -97,35 +99,47 @@ impl View {
     }
 
     /// 文本中光标位置移动，然后将光标在terminal中进行移动
+    #[allow(clippy::arithmetic_side_effects)]
     fn move_text_location(&mut self, direction: &Direction) {
         let Location { mut x, mut y } = self.location;
-        let Size { height, width } = self.size;
+        let Size { height, .. } = self.size;
         match direction {
             Direction::Up => {
                 y = y.saturating_sub(1);
             },
             Direction::Down => {
-                y = y.saturating_add(1);
+                y = cmp::min(y.saturating_add(1), self.buffer.lines.len().saturating_sub(1));
             },
             Direction::Left => {
-                x = x.saturating_sub(1);
+                if x == 0 && y != 0 {
+                    y = y.saturating_sub(1);
+                    x = self.buffer.lines.get(y).map_or(0, Line::len).saturating_sub(1);
+                } else {
+                    x = x.saturating_sub(1);
+                }
             },
             Direction::Right => {
-                x = x.saturating_add(1);
+                if x == self.buffer.lines.get(y).map_or(0, Line::len).saturating_sub(1) {
+                    y = y.saturating_add(1) % self.buffer.lines.len();
+                    x = 0;
+                } else {
+                    x = x.saturating_add(1);
+                }
             },
             Direction::Home => {
                 x = 0;
             },
             Direction::End => {
-                x = width.saturating_sub(1);
+                x = self.buffer.lines.get(y).map_or(0, Line::len);
             },
             Direction::PageUP => {
-                y = 0;
+                y = y.saturating_sub(height.saturating_sub(1));
             },
             Direction::PageDown => {
-                y = height.saturating_sub(1);
+                y = cmp::min(y.saturating_add(height), self.buffer.lines.len().saturating_sub(height)).saturating_sub(1);
             },
         }
+        x = self.buffer.lines.get(y).map_or(0, |line| cmp::min(x, line.len().saturating_sub(1)));
         self.location = Location { x, y };
         self.scroll_location_into_view();
     }
