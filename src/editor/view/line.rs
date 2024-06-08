@@ -1,8 +1,9 @@
 use std::{cmp, ops::Range};
+use unicode_segmentation::UnicodeSegmentation;
 
 
 pub struct Line {
-    pub line: String,
+    line: String,
 }
 
 impl Line {
@@ -17,11 +18,17 @@ impl Line {
     pub fn get(&self, range: Range<usize>) -> String {
         let start = range.start;
         let end = cmp::min(range.end, self.line.len());
-        self.line.get(start..end).unwrap_or_default().to_string()
+        self.line.graphemes(true).collect::<Vec<&str>>().get(start..end).unwrap().join("")
     }
 
     /// line的长度
     pub fn len(&self) -> usize {
         self.line.len()
     }
+}
+
+#[test]
+fn test_graphemes() {
+    let s = "hello, world";
+    println!("{}", s.graphemes(true).collect::<Vec<&str>>().get(0..3).unwrap().join(""))
 }
