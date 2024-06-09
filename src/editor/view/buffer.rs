@@ -18,7 +18,13 @@ impl Buffer {
         Ok(Self { lines })
     }
 
+    /// 判断buffer是否为空
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty()
+    }
+
+    /// 文本最大高度
+    pub fn height(&self) -> usize {
+        self.lines.len()
     }
 }

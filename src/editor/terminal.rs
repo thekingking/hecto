@@ -17,6 +17,16 @@ pub struct Position {
     pub row: usize, 
 }
 
+impl Position {
+    /// 计算两个坐标的相对值（饱和计算）
+    pub const fn saturating_sub(&self, other: Self) -> Self {
+        Self {
+            row: self.row.saturating_sub(other.row),
+            col: self.col.saturating_sub(other.col),
+        }
+    }
+}
+
 pub struct Terminal;
 
 impl Terminal {
