@@ -2,7 +2,7 @@ use std::io::Error;
 use std::fs::read_to_string;
 use super::line::Line;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Buffer {
     pub lines: Vec<Line>,
 }
@@ -27,4 +27,13 @@ impl Buffer {
     pub fn height(&self) -> usize {
         self.lines.len()
     }
+}
+
+#[test]
+fn test_load() {
+    let buffer = Buffer::load("text.txt").unwrap();
+    let lines = buffer.lines;
+    let line = &lines[6];
+    print!("lines: {}", line.get_visible_graphemes(0..153));
+    println!("len: {}", lines.len());
 }
