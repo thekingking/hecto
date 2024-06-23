@@ -83,21 +83,13 @@ impl Editor {
         };
         if should_process {
             // 将crossterm中的event转换为自定义的EditorCommand
-            match EditorCommand::try_from(event) {
-                Ok(command) => {
-                    if matches!(command, EditorCommand::Quit) {
-                        // 退出Editor
-                        self.should_quit = true;
-                    } else {
-                        // 其他事件处理
-                        self.view.handle_command(command);
-                    }
-                }
-                Err(err) => {
-                    #[cfg(debug_assertions)]
-                    {
-                        panic!("Could not handle command: {err:?}");
-                    }
+            if let Ok(command) = EditorCommand::try_from(event) {
+                if matches!(command, EditorCommand::Quit) {
+                    // 退出Editor
+                    self.should_quit = true;
+                } else {
+                    // 其他事件处理
+                    self.view.handle_command(command);
                 }
             }
         }

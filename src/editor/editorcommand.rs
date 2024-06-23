@@ -16,11 +16,13 @@ pub enum Direction {
 
 /// 自定义Editor命令
 pub enum EditorCommand {
-    Move(Direction), // 移动
-    Resize(Size),   // 窗口大小发生变化
-    Quit, // 退出
+    Move(Direction),    // 移动
+    Resize(Size),       // 窗口大小发生变化
+    Quit,               // 退出
+    Insert(char),         // 按键输入内容
 }
 
+#[allow(clippy::as_conversions)]
 impl TryFrom<Event> for EditorCommand {
     type Error = String;
 
@@ -39,15 +41,13 @@ impl TryFrom<Event> for EditorCommand {
                 (KeyCode::End, _) => Ok(Self::Move(Direction::End)),
                 (KeyCode::PageUp, _) => Ok(Self::Move(Direction::PageUP)),
                 (KeyCode::PageDown, _) => Ok(Self::Move(Direction::PageDown)),
+                (KeyCode::Char(ch), KeyModifiers::NONE | KeyModifiers::SHIFT) => Ok(Self::Insert(ch)),
                 _ => Err(format!("Key Code not supported: {code:?}")),
             },
-            Event::Resize(width_u16, height_u16) => {
-                #[allow(clippy::as_conversions)]
-                let height = height_u16 as usize;
-                #[allow(clippy::as_conversions)]
-                let width = width_u16 as usize;
-                Ok(Self::Resize(Size { height, width }))
-            },
+            Event::Resize(width_u16, height_u16) => Ok(Self::Resize(Size {
+                height: height_u16 as usize,
+                width: width_u16 as usize,
+            })),
             _ => Err(format!("Event not supported: {event:?}")),
         }
     }

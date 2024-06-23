@@ -34,30 +34,36 @@ pub struct Line {
 impl Line {
     /// 将String转换为Line
     pub fn from(line_str: &str) -> Self {
-        // 将line_str转为字素数组
-        let fragments = line_str.graphemes(true).map(|grapheme| {
-            let (replacement, rendered_width) = Self::replacement_character(grapheme)
-            .map_or_else(
-                || {
-                    let unicode_width = grapheme.width();
-                    let rendered_width = match unicode_width {
-                        0 | 1 => GraphemeWidth::Half,
-                        _ => GraphemeWidth::Full,
-                    };
-                    (None, rendered_width)
-                }, 
-                |replacement| (Some(replacement), GraphemeWidth::Half)
-            );
-            TextFragment {
-                grapheme: grapheme.to_string(),
-                rendered_width,
-                replacement,
-            }
-        })
-        .collect();
+        let fragments = Self::str_to_fragments(line_str);
         Self {
             fragments,
         }
+    }
+
+    /// 将字符串转换为 Vec<TextFragment>
+    fn str_to_fragments(line_str: &str) -> Vec<TextFragment> {
+        // 将line_str转为字素数组
+        line_str
+            .graphemes(true)
+            .map(|grapheme| {
+                let (replacement, rendered_width) = Self::replacement_character(grapheme)
+                .map_or_else(
+                    || {
+                        let unicode_width = grapheme.width();
+                        let rendered_width = match unicode_width {
+                            0 | 1 => GraphemeWidth::Half,
+                            _ => GraphemeWidth::Full,
+                        };
+                        (None, rendered_width)
+                    }, 
+                    |replacement| (Some(replacement), GraphemeWidth::Half)
+                );
+                TextFragment {
+                    grapheme: grapheme.to_string(),
+                    rendered_width,
+                    replacement,
+                }
+            }).collect()
     }
 
     fn replacement_character(for_str: &str) -> Option<char> {
@@ -120,6 +126,21 @@ impl Line {
             }
         })
         .sum()
+    }
+
+    pub fn insert_char(&mut self, character: char, grapheme_index: usize) {
+        let mut result = String::new();
+
+        for (index, fragment) in self.fragments.iter().enumerate() {
+            if index == grapheme_index {
+                result.push(character);
+            }
+            result.push_str(&fragment.grapheme);
+        }
+        if grapheme_index >= self.fragments.len() {
+            result.push(character);
+        }
+        self.fragments = Self::str_to_fragments(&result);
     }
 }
 
