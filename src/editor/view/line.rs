@@ -66,6 +66,7 @@ impl Line {
             }).collect()
     }
 
+    /// 将0宽的特殊字符进行替换
     fn replacement_character(for_str: &str) -> Option<char> {
         let width = for_str.width();
         match for_str {
@@ -128,6 +129,7 @@ impl Line {
         .sum()
     }
 
+    /// 在line指定位置中插入字符
     pub fn insert_char(&mut self, character: char, grapheme_index: usize) {
         let mut result = String::new();
 
@@ -141,6 +143,18 @@ impl Line {
             result.push(character);
         }
         self.fragments = Self::str_to_fragments(&result);
+    }
+
+    /// 删除line中指定位置的字符
+    pub fn delete(&mut self, grapheme_index: usize) {
+        let mut result = String::new();
+
+        for (index, fragment) in self.fragments.iter().enumerate() {
+            if index != grapheme_index {
+                result.push_str(&fragment.grapheme);
+            }
+        }
+        self.fragments = Self::str_to_fragments(&result)
     }
 }
 

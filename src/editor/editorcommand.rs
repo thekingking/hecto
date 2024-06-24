@@ -19,7 +19,9 @@ pub enum EditorCommand {
     Move(Direction),    // 移动
     Resize(Size),       // 窗口大小发生变化
     Quit,               // 退出
-    Insert(char),         // 按键输入内容
+    Insert(char),       // 键盘输入字符
+    Backspace,          // 退格
+    Delete,             // 删除
 }
 
 #[allow(clippy::as_conversions)]
@@ -42,6 +44,8 @@ impl TryFrom<Event> for EditorCommand {
                 (KeyCode::PageUp, _) => Ok(Self::Move(Direction::PageUP)),
                 (KeyCode::PageDown, _) => Ok(Self::Move(Direction::PageDown)),
                 (KeyCode::Char(ch), KeyModifiers::NONE | KeyModifiers::SHIFT) => Ok(Self::Insert(ch)),
+                (KeyCode::Backspace, _) => Ok(Self::Backspace),
+                (KeyCode::Delete, _) => Ok(Self::Delete),
                 _ => Err(format!("Key Code not supported: {code:?}")),
             },
             Event::Resize(width_u16, height_u16) => Ok(Self::Resize(Size {

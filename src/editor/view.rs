@@ -32,7 +32,9 @@ impl View {
             EditorCommand::Move(direction) => self.move_text_location(&direction),
             EditorCommand::Insert(ch) => self.insert_char(ch),
             EditorCommand::Resize(size) => self.resize(size),
-            EditorCommand::Quit => {}
+            EditorCommand::Backspace => self.backspace(),
+            EditorCommand::Delete => self.delete(),
+            _ => (),
         }
     }
 
@@ -51,23 +53,46 @@ impl View {
         self.needs_redraw = true;
     }
 
+    /// 文本内容操作
+    /// 向文本中插入字符
     fn insert_char(&mut self, ch: char) {
+        // 获取插入字符所在行原本长度
         let old_len = self
             .buffer
             .lines
             .get(self.text_location.line_index)
             .map_or(0, Line::grapheme_count);
+        // 向line中插入字符
         self.buffer.insert_char(ch, self.text_location);
+        // 获取插入字符后line长度
         let new_len = self
             .buffer
             .lines
             .get(self.text_location.line_index)
             .map_or(0, Line::grapheme_count);
+        // 获取插入字素后宽度变化
         let grapheme_delta = new_len.saturating_sub(old_len);
+        // 如果插入字符后宽度发生变化，则将光标向右移动一格
         if grapheme_delta > 0 {
             self.move_right();
         }
+        // 重新绘制当前view
         self.needs_redraw = true;
+    }
+
+    /// 向后删除字符
+    fn delete(&mut self) {
+        // 在line中delete字符
+        self.buffer.delete(self.text_location);
+        self.needs_redraw = true;
+    }
+
+    /// 向前删除字符
+    fn backspace(&mut self) {
+        // 光标向左移动
+        self.move_left();
+        // 删除光标位置的字符
+        self.delete();
     }
 
     // region: Rendering
@@ -225,7 +250,7 @@ impl View {
     fn move_left(&mut self) {
         if self.text_location.grapheme_index > 0 {
             self.text_location.grapheme_index -= 1;
-        } else {
+        } else if self.text_location.line_index > 0 {
             self.move_up(1);
             self.move_to_end_of_line();
         }
@@ -261,7 +286,7 @@ impl View {
 
     /// 保证当前行坐标是合法的
     fn snap_to_valid_line(&mut self) {
-        self.text_location.line_index = cmp::min(self.text_location.line_index, self.buffer.height() - 1);
+        self.text_location.line_index = cmp::min(self.text_location.line_index, self.buffer.height());
     }
 }
 

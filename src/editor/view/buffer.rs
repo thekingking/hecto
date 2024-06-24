@@ -29,14 +29,24 @@ impl Buffer {
         self.lines.len()
     }
 
+    /// 在line中插入字符
     pub fn insert_char(&mut self, character: char, at: Location) {
+        // 超出边界范围，直接退出，不予修改
         if at.line_index > self.lines.len() {
             return;
         }
+        // 在新一行添加字符
         if at.line_index == self.lines.len() {
             self.lines.push(Line::from(&character.to_string()));
         } else if let Some(line) = self.lines.get_mut(at.line_index) {
             line.insert_char(character, at.grapheme_index);
+        }
+    }
+
+    /// 删除当前行指定位置的字符
+    pub fn delete(&mut self, at: Location) {
+        if let Some(line) = self.lines.get_mut(at.line_index) {
+            line.delete(at.grapheme_index);
         }
     }
 }
