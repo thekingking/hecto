@@ -74,7 +74,7 @@ impl View {
         let grapheme_delta = new_len.saturating_sub(old_len);
         // 如果插入字符后宽度发生变化，则将光标向右移动一格
         if grapheme_delta > 0 {
-            self.move_right();
+            self.move_text_location(&Direction::Right);
         }
         // 重新绘制当前view
         self.needs_redraw = true;
@@ -89,8 +89,11 @@ impl View {
 
     /// 向前删除字符
     fn backspace(&mut self) {
+        if self.text_location.line_index == 0 && self.text_location.grapheme_index == 0 {
+            return;
+        }
         // 光标向左移动
-        self.move_left();
+        self.move_text_location(&Direction::Left);
         // 删除光标位置的字符
         self.delete();
     }
@@ -175,7 +178,6 @@ impl View {
     fn scroll_horizontally(&mut self, to: usize) {
         let Size { width, .. } = self.size;
         let offset_changed = if to < self.scroll_offset.col {
-
             self.scroll_offset.col = to;
             true
         } else if to >= self.scroll_offset.col.saturating_add(width) {

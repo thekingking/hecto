@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::{fmt, ops::Range};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -49,6 +49,7 @@ impl Line {
                 let (replacement, rendered_width) = Self::replacement_character(grapheme)
                 .map_or_else(
                     || {
+                        // unicode_width提供的grapheme宽度函数
                         let unicode_width = grapheme.width();
                         let rendered_width = match unicode_width {
                             0 | 1 => GraphemeWidth::Half,
@@ -66,7 +67,7 @@ impl Line {
             }).collect()
     }
 
-    /// 将0宽的特殊字符进行替换
+    /// 将特殊字符进行替换
     fn replacement_character(for_str: &str) -> Option<char> {
         let width = for_str.width();
         match for_str {
@@ -147,19 +148,32 @@ impl Line {
 
     /// 删除line中指定位置的字符
     pub fn delete(&mut self, grapheme_index: usize) {
-        let mut result = String::new();
+        self.fragments.remove(grapheme_index);
+    }
 
-        for (index, fragment) in self.fragments.iter().enumerate() {
-            if index != grapheme_index {
-                result.push_str(&fragment.grapheme);
-            }
-        }
-        self.fragments = Self::str_to_fragments(&result)
+    /// 将另一个line添加当当前line后
+    /// 先将两个line转为字符串，再进行合并，然后重新转换为line
+    /// （不太理解为什么这样写，直接重用之前的不就行了嘛）
+    pub fn append(&mut self, other: &Self) {
+        let mut concat = self.to_string();
+        concat.push_str(&other.to_string());
+        self.fragments = Self::str_to_fragments(&concat);
+    }
+}
+
+impl fmt::Display for Line {
+    /// 当前行内容，将所有字素拼接成当前行并返回
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let result: String = self
+            .fragments
+            .iter()
+            .map(|fragment| fragment.grapheme.clone())
+            .collect();
+        write!(f, "{result}")
     }
 }
 
 #[test]
 fn test_graphemes() {
-    let s = "hello, world";
-    println!("{}", s.graphemes(true).collect::<Vec<&str>>().get(0..3).unwrap().join(""))
+    println!("{:?}", Line::from("Control characters:[Escape][Bell]"));
 }

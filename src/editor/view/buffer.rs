@@ -45,17 +45,24 @@ impl Buffer {
 
     /// 删除当前行指定位置的字符
     pub fn delete(&mut self, at: Location) {
-        if let Some(line) = self.lines.get_mut(at.line_index) {
-            line.delete(at.grapheme_index);
+        // 判断是否在行末
+        if at.grapheme_index >= self.lines.get(at.line_index).map_or(0, Line::grapheme_count) {
+            // 如果当前行不是最后一行，则将下一行合并到当前行，最后一行不进行任何操作
+            if at.line_index + 1 < self.lines.len() {
+                let next_line = self.lines.remove(at.line_index.saturating_add(1));
+                #[allow(clippy::indexing_slicing)]
+                self.lines[at.line_index].append(&next_line)
+            }
+        } else {
+            // 不在行末正常删除即可
+            if let Some(line) = self.lines.get_mut(at.line_index) {
+                line.delete(at.grapheme_index);
+            }
         }
     }
 }
 
 #[test]
 fn test_load() {
-    let buffer = Buffer::load("text.txt").unwrap();
-    let lines = buffer.lines;
-    let line = &lines[6];
-    print!("lines: {}", line.get_visible_graphemes(0..153));
-    println!("len: {}", lines.len());
+
 }
